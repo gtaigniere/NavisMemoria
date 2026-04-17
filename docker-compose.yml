@@ -1,0 +1,70 @@
+version: '3.8'
+# lancer avec : docker compose -f docker-compose.yml --env-file .env up
+services:
+  backend:
+    container_name: backend-nmemoria
+    restart: on-failure
+    depends_on:
+      - db
+    build:
+      context: ./backend
+      target: ${TARGET:-development}
+      args:
+        JDK_IMAGE: ${JDK_IMAGE}
+        JRE_VERSION: ${JRE_VERSION}
+        APP_NAME: ${APP_NAME}
+    environment:
+      APP_NAME: ${APP_NAME}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-admin}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-pwd}
+      TOKEN_SIGNING_KEY: ${TOKEN_SIGNING_KEY}
+      TOKEN_DURATION: ${TOKEN_DURATION}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+    ports:
+      - ${BACKEND_PORT:-8080}:8080
+      - 35729:35729
+      - 5005:5005
+    volumes:
+      - ./backend:/app
+      - ./backend/.m2:/root/.m2
+
+  frontend:
+    container_name: frontend-nmemoria
+    restart: on-failure
+    build:
+      context: ./frontend
+      args:
+        NODE_VERSION: ${NODE_VERSION}
+        NG_VERSION: ${NG_VERSION}
+    ports:
+      - ${FRONTEND_PORT:-4200}:4200
+    volumes:
+      - ./frontend:/app
+
+  db:
+    container_name: mysql-nmemoria
+    restart: on-failure
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dbname}
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-pwd}
+    ports:
+      - ${MYSQL_PORT:-3306}:3306
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+
+  adminer:
+    container_name: adminer-nmemoria
+    restart: on-failure
+    image: adminer:5
+    environment:
+      ADMINER_DEFAULT_SERVER: ${ADMINER_DEFAULT_SERVER:-mysql}
+    ports:
+      - ${ADMINER_PORT:-8080}:8080
+
+volumes:
+  mysql-data:
